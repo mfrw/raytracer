@@ -2,9 +2,9 @@
 
 
 ray : raytracer.o
-	g++ -O3 raytracer.o
+	g++ -O3 raytracer.o -o ray
 
 raytracer.o : raytracer.cpp
-	g++ -O3 raytracer.cpp
+	g++ -O3 -c raytracer.cpp
 clean:
-	rm -f ray
+	rm -f ray *.o
