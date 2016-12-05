@@ -10,6 +10,14 @@
 #include <stdio.h>
 #include <time.h>
 
+#include "vect.h"
+#include "ray.h"
+#include "camera.h"
+#include "light.h"
+#include "sphere.h"
+#include "object.h"
+#include "plane.h"
+
 using namespace std;
 
 struct rgb_t {
@@ -75,8 +83,43 @@ void savebmp(const char *filename, int w, int h, int dpi, rgb_t *color_d) {
 	}
 	fclose(f);
 }
+int winning_obj_index(vector<double> object_intersections) {
+	// return the index of the winning ints
+	int index_of_min_val;
+
+	if(object_intersections.size() == 0) {
+		return -1;
+	}
+	else if (object_intersections.size() == 1) {
+		if(object_intersections.at(0) > 0)
+			return 0;
+		else
+			return -1;
+	}
+	else {
+		double max = 0;
+		for (int i = 0; i < object_intersections.size(); i++) {
+			if(max < object_intersections.at(i)) {
+				max = object_intersections.at(i);
+			}
+		}
+		if(max > 0) {
+			for (int index = 0; index < object_intersections.size(); index++) {
+				if(object_intersections.at(index) > 0 && object_intersections.at(index) <= max) {
+					max = object_intersections.at(index);
+					index_of_min_val = index;
+				}
+			}
+			return index_of_min_val;
+		}
+		else {
+			return -1;
+		}
+	}
+}
 
 int cur;
+
 
 int main(int argc, char *argv[]) {
 	cout <<"Rendering..."<< endl;
@@ -84,12 +127,69 @@ int main(int argc, char *argv[]) {
 	int dpi = 72;
 	int width = 640;
 	int height = 480;
+	double aspectratio = (double)width/(double)height;
 	int res = width*height;
 	rgb_t *pixels = new rgb_t[res];
+
+	vect campos(2.0, 1.5, -4.0);
+
+
+	vect o(0,0,0); // origin
+	vect x(1.0,0.0,0.0);
+	vect y(0.0,1.0,0.0);
+	vect z(0.0,0.0,1.0);
+	vect look_at(0.0,0.0,0.0);
+
+	vect diff_btw(campos.getvectx() - look_at.getvectx(), campos.getvecty() - look_at.getvecty(), campos.getvectz() - look_at.getvectz());
+
+	vect camdir = diff_btw.negative().normalize();
+	vect camright = y.cross_product(camdir).normalize();
+	vect camdown = camright.cross_product(camdir);
+	camera scene_cam(campos, camdir, camright, camdown);
+	color white_light(1.0, 1.0, 1.0, 0);
+	color pretty_green(0.5, 1.0, 0.5, 0.3);
+	color gray(0.5, 0.5, 0.5, 0);
+	color black(0,0,0,0);
+	color maroon(0.5, 0.25, 0.25, 0);
+
+	vect light_position(-7, 10, -10);
+	light scene_light(light_position, white_light);
+
+
+	double xamnt, yamnt;
+	sphere scene_sphere(o, 1, pretty_green);
+	plane scene_plane(y, -1, maroon);
+	vector<object*> scene_objects;
+	scene_objects.push_back(dynamic_cast<object*>(&scene_sphere));
+	scene_objects.push_back(dynamic_cast<object*>(&scene_plane));
 
 	for(int i = 0; i < width; i++) {
 		for(int j = 0; j < height; j++) {
 			cur = j*width + i;
+			// start with no anti-aliasing
+			if(width > height) {
+				xamnt = ((i+0.5)/width) *aspectratio - ((width-height)/2);
+				yamnt = ((height - j) + 0.5)/height;
+			}
+			else if(height > width) {
+				xamnt = (i + 0.5)/width;
+				yamnt = (((height - j) + 0.5)/height)/aspectratio - (((height - width)/(double)width)/2);
+			}
+			else {
+				xamnt = (i+0.5)/width;
+				yamnt = ((height - j) + 0.5)/height;
+			}
+			vect cam_ray_origin = scene_cam.getcpos();
+			vect cam_ray_direction = camdir.vect_add(camright.vect_mult(xamnt - 0.5).vect_add(camdown.vect_mult(yamnt-0.5))).normalize();
+			ray cam_ray(cam_ray_origin, cam_ray_direction);
+
+			vector<double> intersections;
+			for (int index = 0; index < scene_objects.size(); index++) {
+				intersections.push_back(scene_objects.at(index)->find_int(cam_ray));
+			}
+
+			int index_of_winning_object = winning_obj_index(intersections);
+
 			if((i > 200 && i < 440) && (j > 200 && j < 280)) {
 				pixels[cur].r = 203;
 				pixels[cur].g = 102;
@@ -103,6 +203,7 @@ int main(int argc, char *argv[]) {
 
 		}
 	}
+
 	savebmp("scene.bmp", width, height, dpi, pixels);
 	return 0;
 }
