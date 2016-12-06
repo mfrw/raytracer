@@ -9,7 +9,7 @@ class object {
 	public:
 	object(void);
 
-	color getobject_col() {return color(0,0,0,0);}
+	color get_col() {return color(0,0,0,0);}
 
 	double find_int(ray r) {
 		return 0;
