@@ -105,7 +105,7 @@ int winning_obj_index(vector<double> object_intersections) {
 		}
 		if(max > 0) {
 			for (int index = 0; index < object_intersections.size(); index++) {
-				if(object_intersections.at(index) > 0 && object_intersections.at(index) <= max) {
+				if((object_intersections.at(index) > 0) && (object_intersections.at(index) <= max)) {
 					max = object_intersections.at(index);
 					index_of_min_val = index;
 				}
@@ -134,11 +134,12 @@ int main(int argc, char *argv[]) {
 	vect campos(2.0, 1.5, -4.0);
 
 
-	vect o(0,0,0); // origin
-	vect x(1.0,0.0,0.0);
-	vect y(0.0,1.0,0.0);
-	vect z(0.0,0.0,1.0);
-	vect look_at(0.0,0.0,0.0);
+	vect o(0, 0, 0); // origin
+	vect x(1, 0, 0);
+	vect y(0, 1, 0);
+	vect z(0 ,0, 1);
+	vect look_at(0, 0, 0);
+	vect new_sphere_loc(1.75, -0.25, 0);
 
 	vect diff_btw(campos.getvectx() - look_at.getvectx(), campos.getvecty() - look_at.getvecty(), campos.getvectz() - look_at.getvectz());
 
@@ -160,8 +161,8 @@ int main(int argc, char *argv[]) {
 	sphere scene_sphere(o, 1, pretty_green);
 	plane scene_plane(y, -1, maroon);
 	vector<object*> scene_objects;
-	scene_objects.push_back(dynamic_cast<object*>(&scene_sphere));
 	scene_objects.push_back(dynamic_cast<object*>(&scene_plane));
+	scene_objects.push_back(dynamic_cast<object*>(&scene_sphere));
 
 	for(int i = 0; i < width; i++) {
 		for(int j = 0; j < height; j++) {
@@ -190,15 +191,16 @@ int main(int argc, char *argv[]) {
 
 			int index_of_winning_object = winning_obj_index(intersections);
 
-			if((i > 200 && i < 440) && (j > 200 && j < 280)) {
-				pixels[cur].r = 203;
-				pixels[cur].g = 102;
-				pixels[cur].b = 210;
-			}
-			else {
+			if(index_of_winning_object == -1) {
 				pixels[cur].r = 0;
 				pixels[cur].g = 0;
 				pixels[cur].b = 0;
+			}
+			else {
+				color this_color = scene_objects.at(index_of_winning_object)->get_col();
+				pixels[cur].r = this_color.getcolor_red();
+				pixels[cur].g = this_color.getcolor_green();
+				pixels[cur].b = this_color.getcolor_blue();
 			}
 
 		}
